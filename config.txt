@@ -1,29 +1,29 @@
-------------------------------------
-
+#Atualizar sistema
 dnf update -y
 
+#Instalar Bind9
 dnf install bind bind-utils -y
 
+#Iniciar Serviço
 systemctl start named
 systemctl enable named
 
-
+#Editar arquivo de configuração
 vim /etc/named.conf
 
-# comentar essas duas linhas 
+#Comentar essas duas linhas adicionando o //
 
-//listen-on port 53 { 127.0.0.1; };
-//listen-on-v6 port 53 { ::1; };
+listen-on port 53 { 127.0.0.1; };
+listen-on-v6 port 53 { ::1; };
 
-
-# alterar o localhost para ip da rede ex: 192.168.107.0/24
+#Alterar o localhost para ip da rede ou adicionar o ip da rede junto ao localhost (Ex de ip: 192.168.107.0/24)
 
 allow-query     { localhost;192.168.1.0/24; };
 
 # criar a zona do dns
-
 vim /etc/named.conf
 
+#Exemplo da criação de uma zona DNS, basta ler e ir alterando onde for mencionado
 //Forward Zone
 zone "alterar para o dns" IN { 
 
@@ -43,10 +43,11 @@ zone "colocar o ip de trás para frente e .in-addr.arpa ex: 107.168.192.in-addr.
 };
 
 
-# criar o arquivo .db
+#Criação do arquivo .db
 
 vim /var/named/colocar o dns com .db
 
+#Exemplo do arquivo .db
 $TTL 86400
 @   IN  SOA     nome da maquina . alterar para dns. root. alterar para dns com . no final (
                                               3           ;Serial
@@ -68,9 +69,10 @@ www     IN  A       ip de onde está a aplicação
 ;CNAME record
 ftp     IN CNAME        www.alterar para o dns e colocar . no final
 
+#Criação da segunda zona na qual consiste uma parte do ip'sem a ultima casa
 vim /var/named/ip do servidor sem a ultima casa .db
 
-
+#Exemplo da criação do arquivo
 $TTL 86400
 @   IN  SOA     nome da maquina .alterar para dns. root. alterar para dns (
                                        3           ;Serial
@@ -89,41 +91,40 @@ $TTL 86400
 ;PTR Record IP address to HostName
 101      IN  PTR     www. alterar para dns com . no final
 
-# verificar se a config está certa
-
+#Comando de verificação de sintax do arquivo
 named-checkconf /etc/named.conf
 
-#se não parecer nada está OK
+#Caso não mostrar nada, o arquivo está OK
 
-# verificar se a config de zone está certo com o dominio
+#Comando para verificar se a config de zone está certo com o dominio
 
 named-checkzone alterar para dns /var/named/alterar para local onde está o arquivo .db do dns
 
-#se aparecer algo do tipo (zone seu dns/IN: loaded serial 3 OK) está certo
+#Caso seja mostrado algo do tipo (zone seu dns/IN: loaded serial 3 OK) está certo
 
-# comando para verificar o arquivo .db que possui o ip ao contrario 
+#Comando para verificar o arquivo .db que possui o ip ao contrario 
 
 named-checkzone alterar para o ip .in-addr.arpa /var/named/colocar o nome do arquivo .db
 
-# é para aparecer um resultado (zone ip da maquina .in-addr.arpa/IN: loaded serial 3 OK )
+#É para aparecer um resultado (zone ip da maquina .in-addr.arpa/IN: loaded serial 3 OK )
 
-#reiniciar o serviço
+#Reiniciar o serviço
 
 systemctl restart named
 
-# configurar o firewall para liberar a porta 53 e logo em segui efetuar o reload 
+#Configurar o firewall para liberar a porta 53 e logo em segui efetuar o reload 
 
 firewall-cmd --permanent --add-port=53/udp
 firewall-cmd --reload
 
-
-# verificando se funcionou 
+#Passos para verificar se o servidor de DNS está funcionando
 
 vim /etc/resolv.conf
 
+#Adicionar esta linha colocando o ip do servidor DNS
 nameserver ip do servidor dns
 
-# comando para testar ser está funcionando o servidor de DNS
+#Comando para testar ser está funcionando o servidor de DNS
 
 dig www.dns escolhido
 
@@ -131,8 +132,8 @@ dig www.dns escolhido
 
 ping dns
 
-# caso escolha o dig irá aparecer varias mensagens incluindo os dns que colocou no arquivo .db
-#mas o principal é a linha ;; flags: qr aa rd ra; QUERY: 1, ANSWER: 1, AUTHORITY: 1, ADDITIONAL: 2
-#se nem um das variaveis der 0 está OK
+#Caso escolha o dig irá aparecer varias mensagens incluindo os dns que colocou no arquivo .db
+#Mas o principal é a linha ;; flags: qr aa rd ra; QUERY: 1, ANSWER: 1, AUTHORITY: 1, ADDITIONAL: 2
+#Se nem um das variaveis der 0 está OK
 
-#caso escolha o ping para testar simplesmente deve pingar no ip que configurou para o DNS ou seja onde está aplicação.
+#Caso escolha o ping para testar simplesmente deve pingar no ip que configurou para o DNS ou seja onde está aplicação.
