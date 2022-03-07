@@ -1,8 +1,12 @@
+#Comando para alterar nome da maquina,
+hostnamectl set-hostname nome que deseja colocar
+
 #Atualizar sistema
 dnf update -y
 
 #Instalar Bind9
 dnf install bind bind-utils -y
+dnf install oracle-epel-release-el8
 
 #Iniciar Serviço
 systemctl start named
@@ -24,72 +28,33 @@ allow-query     { localhost;192.168.1.0/24; };
 vim /etc/named.conf
 
 #Exemplo da criação de uma zona DNS, basta ler e ir alterando onde for mencionado
-//Forward Zone
+
 zone "alterar para o dns" IN { 
 
            type master;  
-           file "alterar para onde fica o arquivo do dns e coloca .db no final ex: vitor.com.br.db"; 
+           file "alterar para onde fica o arquivo do dns e coloca db. no final ex: db.dns"; 
            allow-update { none; };  
 
 };
 
-//Reverse Zone
-zone "colocar o ip de trás para frente e .in-addr.arpa ex: 107.168.192.in-addr.arpa" IN { 
+#Criação do arquivo db.
 
-             type master;  
-             file "alterar para onde fica o arquivo .db";             
-             allow-update { none; };
-
-};
-
-
-#Criação do arquivo .db
-
-vim /var/named/colocar o dns com .db
+vim /var/named/db.dns
 
 #Exemplo do arquivo .db
 $TTL 86400
-@   IN  SOA     nome da maquina . alterar para dns. root. alterar para dns com . no final (
-                                              3           ;Serial
-                                              3600        ;Refresh
-                                              1800        ;Retry
-                                              604800      ;Expire
-                                              86400       ;Minimum TTL
-)
-
-;Name Server Information
-@       IN  NS      colocar nome da maquina. colocar dns com . no final
-
-;IP address of Name Server
-nome da maquina       IN  A       ip do servidor dns
-
-;A - Record HostName To Ip Address
-www     IN  A       ip de onde está a aplicação
-
-;CNAME record
-ftp     IN CNAME        www.alterar para o dns e colocar . no final
-
-#Criação da segunda zona na qual consiste uma parte do ip'sem a ultima casa
-vim /var/named/ip do servidor sem a ultima casa .db
-
-#Exemplo da criação do arquivo
-$TTL 86400
-@   IN  SOA     nome da maquina .alterar para dns. root. alterar para dns (
-                                       3           ;Serial
-                                       3600        ;Refresh
-                                       1800        ;Retry
-                                       604800      ;Expire
-                                       86400       ;Minimum TTL
-)
-
-;Name Server Information
-@         IN      NS         nome da maquina . colocar dns com . no final
-
-;Reverse lookup for Name Server
-100       IN  PTR     nome da maquina . alterar para dns com . no final
-
-;PTR Record IP address to HostName
-101      IN  PTR     www. alterar para dns com . no final
+@       IN SOA  nome da maquina.dns root.dns. (
+        1       ; Serial
+        86400   ; Refresh
+        86400   ; Retry
+        86400   ; Expire
+        86400   ; Negative Cache TTL
+);
+@       IN NS   ns1.bronco.nexfar.guga.
+nome do servidor de dns     IN A    ip do servidor de dns
+nome da maquina onde esta aplicação      IN A    ip do local onde esta aplicação
+dns      IN A    ip do servidor de dns
+www     IN CNAME        nome da maquina onde esta a aplicação
 
 #Comando de verificação de sintax do arquivo
 named-checkconf /etc/named.conf
@@ -102,12 +67,6 @@ named-checkzone alterar para dns /var/named/alterar para local onde está o arqu
 
 #Caso seja mostrado algo do tipo (zone seu dns/IN: loaded serial 3 OK) está certo
 
-#Comando para verificar o arquivo .db que possui o ip ao contrario 
-
-named-checkzone alterar para o ip .in-addr.arpa /var/named/colocar o nome do arquivo .db
-
-#É para aparecer um resultado (zone ip da maquina .in-addr.arpa/IN: loaded serial 3 OK )
-
 #Reiniciar o serviço
 
 systemctl restart named
@@ -117,12 +76,7 @@ systemctl restart named
 firewall-cmd --permanent --add-port=53/udp
 firewall-cmd --reload
 
-#Passos para verificar se o servidor de DNS está funcionando
-
-vim /etc/resolv.conf
-
-#Adicionar esta linha colocando o ip do servidor DNS
-nameserver ip do servidor dns
+#Dever ser alterado o DNS da sua maquina para poder funcionar de formaque você deve adicionar o ip do servidor de DNS a sua maquina.
 
 #Comando para testar ser está funcionando o servidor de DNS
 
@@ -130,10 +84,10 @@ dig www.dns escolhido
 
 #ou 
 
-ping dns
+ping www.dns
 
 #Caso escolha o dig irá aparecer varias mensagens incluindo os dns que colocou no arquivo .db
 #Mas o principal é a linha ;; flags: qr aa rd ra; QUERY: 1, ANSWER: 1, AUTHORITY: 1, ADDITIONAL: 2
-#Se nem um das variaveis der 0 está OK
+#Somente a variavel AUTHORITY pode dar o valor 0, o resto tem que estar com o valor 1 ou mais no casso do ADDITIONAL
 
 #Caso escolha o ping para testar simplesmente deve pingar no ip que configurou para o DNS ou seja onde está aplicação.
